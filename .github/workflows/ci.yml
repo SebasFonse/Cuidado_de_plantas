@@ -1,0 +1,28 @@
+name: CI Plantacert
+
+# Compila y ejecuta las pruebas en cada push y en cada Pull Request.
+# Si las pruebas fallan, el PR queda en rojo y no se debe fusionar (así no se tumba develop).
+on:
+  push:
+    branches: [ main, develop, test, "feature/**" ]
+  pull_request:
+    branches: [ main, develop, test ]
+
+jobs:
+  build-y-pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Compilar y ejecutar pruebas
+        run: |
+          chmod +x mvnw
+          ./mvnw -B verify
