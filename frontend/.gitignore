@@ -1,0 +1,23 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.lock.bak
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+
+# Carpetas de plataforma generadas con "flutter create ."
+# (cada uno las genera en su PC; no se suben para evitar conflictos)
+android/
+ios/
+web/
+windows/
+linux/
+macos/
+.metadata

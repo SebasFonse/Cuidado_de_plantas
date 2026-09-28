@@ -1,0 +1,35 @@
+name: CI Flutter
+
+# Analiza y ejecuta las pruebas del frontend cuando cambia la carpeta frontend/
+on:
+  push:
+    branches: [ main, develop, test, "feature/**" ]
+    paths: [ "frontend/**", ".github/workflows/flutter.yml" ]
+  pull_request:
+    branches: [ main, develop, test ]
+    paths: [ "frontend/**", ".github/workflows/flutter.yml" ]
+
+jobs:
+  analisis-y-pruebas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Análisis estático
+        run: flutter analyze --no-fatal-infos
+
+      - name: Pruebas
+        run: flutter test

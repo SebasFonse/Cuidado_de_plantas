@@ -9,7 +9,8 @@ quarkus:
     root-path: /api
     cors:
       enabled: true
-      origins: "http://localhost:5173"
+      # Acepta el frontend Flutter web en cualquier puerto de localhost
+      origins: "/http://localhost:[0-9]+/"
       methods: GET,POST,PUT,DELETE,OPTIONS
       headers: Content-Type,Authorization,X-Requested-With
 
