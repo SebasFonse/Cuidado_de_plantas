@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/tema.dart';
 import '../core/sesion.dart';
 import '../inicio/inicio_pantalla.dart';
+import 'registro_pantalla.dart';
 
 /// Pantalla de inicio de sesión.
 /// El inicio de sesión real (correo + contraseña con JWT) corresponde a RQ-02.
@@ -115,7 +116,14 @@ class _LoginPantallaState extends State<LoginPantalla> {
                   child: const Text('Iniciar sesión'),
                 ),
                 const SizedBox(height: 8),
-                // ENLACE_REGISTRO: aquí se agrega el enlace de registro (RQ1-HU01)
+                // RQ1-HU01: enlace de registro accesible desde el inicio de sesión
+                TextButton(
+                  key: const Key('enlace_registro'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RegistroPantalla()),
+                  ),
+                  child: const Text('¿No tienes cuenta? Regístrate'),
+                ),
                 const Divider(height: 32),
                 Text(
                   'Acceso temporal de desarrollo (hasta RQ-02)',
