@@ -4,6 +4,7 @@ import '../app/tema.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
 import 'agregar_planta_pantalla.dart';
+import 'detalle_planta_pantalla.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
 
@@ -138,6 +139,11 @@ class _TarjetaPlanta extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ListTile(
+        // HU08: al tocar la planta se abre su información con los cuidados
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DetallePlantaPantalla(planta: planta)),
+        ),
+        trailing: const Icon(Icons.chevron_right),
         contentPadding: const EdgeInsets.all(12),
         leading: SizedBox(
           width: 56,
