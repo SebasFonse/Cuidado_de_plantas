@@ -33,3 +33,8 @@ jobs:
 
       - name: Pruebas
         run: flutter test
+
+      - name: Compilar versión web
+        run: |
+          flutter create . --platforms=web
+          flutter build web --release
