@@ -49,7 +49,11 @@ public class PlantaServicio {
         return PlantaRespuesta.desde(planta);
     }
 
-    /** Catálogo del usuario (permite verificar que la planta quedó registrada). */
+    /**
+     * HU04: listado del catálogo del usuario.
+     * Solo devuelve las plantas asociadas a ese usuario, de la más reciente a la más antigua.
+     * Si el usuario no tiene plantas devuelve una lista vacía.
+     */
     public List<PlantaRespuesta> listarPorUsuario(Long usuarioId) {
         buscarUsuario(usuarioId);
         return plantaRepositorio.listarPorUsuario(usuarioId)

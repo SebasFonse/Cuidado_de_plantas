@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -87,5 +88,55 @@ public class PlantaServicioTest {
 
         assertEquals(404, error.getStatus());
         verify(plantaRepositorio, never()).persist(any(Planta.class));
+    }
+
+    // HU04: ver listado de plantas del catálogo
+
+    private Planta plantaSimulada(Long id, String nombre, Usuario usuario) {
+        Planta planta = new Planta();
+        planta.id = id;
+        planta.nombre = nombre;
+        planta.especie = "Especie";
+        planta.ubicacion = "Sala";
+        planta.imagenUrl = "https://ejemplo.com/" + id + ".jpg";
+        planta.fechaRegistro = LocalDateTime.now();
+        planta.usuario = usuario;
+        return planta;
+    }
+
+    @Test
+    public void testListarPlantasConservaElOrdenDelRepositorio() {
+        Usuario usuario = usuarioSimulado();
+        when(usuarioRepositorio.findByIdOptional(1L)).thenReturn(Optional.of(usuario));
+        when(plantaRepositorio.listarPorUsuario(1L)).thenReturn(List.of(
+                plantaSimulada(2L, "Suculenta", usuario),
+                plantaSimulada(1L, "Helecho", usuario)));
+
+        List<PlantaRespuesta> plantas = plantaServicio.listarPorUsuario(1L);
+
+        assertEquals(2, plantas.size());
+        assertEquals("Suculenta", plantas.get(0).nombre());
+        assertEquals("Helecho", plantas.get(1).nombre());
+        assertEquals("https://ejemplo.com/2.jpg", plantas.get(0).imagenUrl());
+        assertEquals(1L, plantas.get(0).usuarioId());
+    }
+
+    @Test
+    public void testListarPlantasCatalogoVacio() {
+        when(usuarioRepositorio.findByIdOptional(1L)).thenReturn(Optional.of(usuarioSimulado()));
+        when(plantaRepositorio.listarPorUsuario(1L)).thenReturn(List.of());
+
+        assertTrue(plantaServicio.listarPorUsuario(1L).isEmpty());
+    }
+
+    @Test
+    public void testListarPlantasUsuarioInexistente() {
+        when(usuarioRepositorio.findByIdOptional(99L)).thenReturn(Optional.empty());
+
+        NegocioException error = assertThrows(NegocioException.class,
+                () -> plantaServicio.listarPorUsuario(99L));
+
+        assertEquals(404, error.getStatus());
+        verify(plantaRepositorio, never()).listarPorUsuario(any());
     }
 }
