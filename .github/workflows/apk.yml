@@ -44,7 +44,10 @@ jobs:
             sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#&\n    <uses-permission android:name="android.permission.INTERNET"/>#' $MANIFEST
           # Nombre que se ve en el celular
           sed -i 's#android:label="[^"]*"#android:label="Plantacert AI"#' $MANIFEST
-          grep -n -E "INTERNET|android:label" $MANIFEST
+          # Si falta el permiso o el nombre, el build falla
+          grep -q 'android.permission.INTERNET' $MANIFEST
+          grep -q 'android:label="Plantacert AI"' $MANIFEST
+          grep -E "INTERNET|android:label" $MANIFEST | while read -r l; do echo "::notice::$l"; done
 
       - name: Dependencias
         run: flutter pub get
