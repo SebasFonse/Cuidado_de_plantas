@@ -49,8 +49,9 @@ public class PlantaRecursos {
     @GET
     @Path("/usuario/{usuarioId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Listar las plantas del usuario")
-    @APIResponse(responseCode = "200", description = "Catálogo del usuario")
+    @Operation(summary = "Ver listado de plantas del catálogo (HU04)",
+               description = "Devuelve solo las plantas del usuario, de la más reciente a la más antigua")
+    @APIResponse(responseCode = "200", description = "Catálogo del usuario (lista vacía si no tiene plantas)")
     @APIResponse(responseCode = "404", description = "El usuario no existe")
     public Response listar(@PathParam("usuarioId") Long usuarioId) {
         List<PlantaRespuesta> plantas = plantaServicio.listarPorUsuario(usuarioId);
