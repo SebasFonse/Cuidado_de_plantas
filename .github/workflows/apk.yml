@@ -1,0 +1,60 @@
+name: APK Android
+
+# Compila el APK de la app apuntando a la API publicada en Vercel.
+# El APK queda para descargar en la pestaña Actions > (ejecución) > Artifacts.
+# También se puede lanzar a mano con "Run workflow".
+on:
+  push:
+    branches: [ develop, "feature/**" ]
+    paths: [ "frontend/**", ".github/workflows/apk.yml" ]
+  workflow_dispatch:
+
+env:
+  API_URL: https://plantacert-api.vercel.app/api
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17 (Gradle de Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # La carpeta android/ no se sube al repo: se genera aquí
+      - name: Generar proyecto Android
+        run: |
+          flutter create . --platforms=android --org edu.ucentral.plantacert
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          # Sin este permiso el APK en modo release no puede conectarse a la API
+          grep -q "android.permission.INTERNET" $MANIFEST || \
+            sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#&\n    <uses-permission android:name="android.permission.INTERNET"/>#' $MANIFEST
+          # Nombre que se ve en el celular
+          sed -i 's#android:label="[^"]*"#android:label="Plantacert AI"#' $MANIFEST
+          grep -n -E "INTERNET|android:label" $MANIFEST
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Compilar APK
+        run: flutter build apk --release --dart-define=API_URL=$API_URL
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: plantacert-apk
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
