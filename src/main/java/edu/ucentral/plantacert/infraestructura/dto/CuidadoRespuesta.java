@@ -10,6 +10,8 @@ public record CuidadoRespuesta(
         String tipo,
         Integer frecuenciaDias,
         LocalDate fechaUltimoCuidado,
+        LocalDate fechaInicio,
+        LocalDate fechaFin,
         String notas,
         LocalDateTime fechaRegistro,
         Long plantaId
@@ -20,6 +22,8 @@ public record CuidadoRespuesta(
                 cuidado.tipo != null ? cuidado.tipo.name() : null,
                 cuidado.frecuenciaDias,
                 cuidado.fechaUltimoCuidado,
+                cuidado.fechaInicio,
+                cuidado.fechaFin,
                 cuidado.notas,
                 cuidado.fechaRegistro,
                 cuidado.planta != null ? cuidado.planta.id : null);

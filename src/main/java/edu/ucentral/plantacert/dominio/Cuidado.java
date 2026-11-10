@@ -32,6 +32,14 @@ public class Cuidado extends PanacheEntity {
     @Column(name = "fecha_ultimo_cuidado", nullable = false)
     public LocalDate fechaUltimoCuidado;
 
+    /** Primer día del periodo del cuidado (por ejemplo, desde cuándo se riega). */
+    @Column(name = "fecha_inicio")
+    public LocalDate fechaInicio;
+
+    /** Último día del periodo. Si es null el cuidado se repite sin fecha de fin. */
+    @Column(name = "fecha_fin")
+    public LocalDate fechaFin;
+
     @Column(length = 500)
     public String notas;
 

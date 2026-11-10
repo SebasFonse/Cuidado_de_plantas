@@ -36,7 +36,7 @@ public class CuidadoRecursos {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Agregar un cuidado periódico a una planta (HU08)",
-               description = "Registra tipo, frecuencia en días, fecha del último cuidado y notas opcionales")
+               description = "Registra tipo, frecuencia en días, fecha del último cuidado, periodo (primer y último día) y notas opcionales")
     @APIResponse(responseCode = "201", description = "Cuidado registrado")
     @APIResponse(responseCode = "400", description = "Datos de entrada inválidos")
     @APIResponse(responseCode = "404", description = "La planta no existe o no pertenece al usuario")

@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,10 +36,22 @@ public class CuidadoServicio {
     public CuidadoRespuesta registrar(Long usuarioId, Long plantaId, CuidadoPayLoad payLoad) {
         Planta planta = buscarPlantaDelUsuario(usuarioId, plantaId);
 
+        // Periodo del cuidado: si no se indica el primer día se toma el último cuidado
+        LocalDate fechaInicio = payLoad.fechaInicio() != null
+                ? payLoad.fechaInicio()
+                : payLoad.fechaUltimoCuidado();
+        LocalDate fechaFin = payLoad.fechaFin();
+        if (fechaFin != null && fechaInicio != null && fechaFin.isBefore(fechaInicio)) {
+            throw new NegocioException(400, "CERT-ERR-C2",
+                    "El último día del cuidado no puede ser anterior al primer día");
+        }
+
         Cuidado cuidado = new Cuidado();
         cuidado.tipo = TipoCuidado.valueOf(payLoad.tipo().trim());
         cuidado.frecuenciaDias = payLoad.frecuenciaDias();
         cuidado.fechaUltimoCuidado = payLoad.fechaUltimoCuidado();
+        cuidado.fechaInicio = fechaInicio;
+        cuidado.fechaFin = fechaFin;
         cuidado.notas = limpiar(payLoad.notas());
         cuidado.fechaRegistro = LocalDateTime.now();
         cuidado.planta = planta;

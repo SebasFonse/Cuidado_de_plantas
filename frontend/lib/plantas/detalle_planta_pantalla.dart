@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/componentes.dart';
 import '../app/tema.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
@@ -94,15 +95,40 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
       ),
       body: RefreshIndicator(
         onRefresh: _cargar,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          children: [
-            _Encabezado(planta: planta),
-            const SizedBox(height: 24),
-            Text('Cuidados', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            ..._seccionCuidados(),
-          ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+              children: [
+                _Encabezado(planta: planta),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Icon(Icons.water_drop_outlined, color: verdeMedio),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Cuidados',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: verdeOscuro,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!_cargando && _error == null)
+                      Insignia(
+                        texto: '${_cuidados.length}',
+                        fondo: verdeSuave,
+                        colorTexto: verdeOscuro,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ..._seccionCuidados(),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -119,7 +145,7 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
     }
     if (_error != null) {
       return [
-        Text(_error!, key: const Key('cuidados_error')),
+        CajaError(key: const Key('cuidados_error'), mensaje: _error!),
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
@@ -129,14 +155,29 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
     }
     if (_cuidados.isEmpty) {
       return const [
-        Text(
-          'Esta planta aún no tiene cuidados.\nUsa "Agregar cuidado" para registrar el primero.',
-          key: Key('cuidados_vacio'),
+        TarjetaSuave(
+          child: Row(
+            children: [
+              Icon(Icons.spa_outlined, size: 36, color: verdeClaro),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Esta planta aún no tiene cuidados.\nUsa "Agregar cuidado" para registrar el primero.',
+                  key: Key('cuidados_vacio'),
+                  style: TextStyle(color: colorTextoSuave),
+                ),
+              ),
+            ],
+          ),
         ),
       ];
     }
     return [
-      for (final cuidado in _cuidados) _TarjetaCuidado(cuidado: cuidado),
+      for (final cuidado in _cuidados)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _TarjetaCuidado(cuidado: cuidado),
+        ),
     ];
   }
 }
@@ -148,32 +189,53 @@ class _Encabezado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagen = planta.imagenUrl;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (imagen != null)
+    final imagen = planta.imagenUrl?.trim();
+    final portadaPorDefecto = Container(
+      decoration: const BoxDecoration(gradient: degradadoHoja),
+      alignment: Alignment.center,
+      child: const Icon(Icons.local_florist, size: 72, color: verdePlantacert),
+    );
+    return TarjetaSuave(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              imagen,
-              height: 200,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox(
-                height: 80,
-                child: Icon(Icons.broken_image_outlined, size: 48),
-              ),
+            child: SizedBox(
+              height: 220,
+              child: (imagen == null || imagen.isEmpty)
+                  ? portadaPorDefecto
+                  : Image.network(
+                      imagen,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => portadaPorDefecto,
+                    ),
             ),
           ),
-        const SizedBox(height: 12),
-        Text(planta.nombre, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 4),
-        Text('${planta.especie} · ${planta.ubicacion}'),
-        if (planta.descripcion != null && planta.descripcion!.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(planta.descripcion!),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  planta.especie,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: colorTextoSuave,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Insignia(texto: planta.ubicacion, icono: Icons.place_outlined),
+                if (planta.descripcion != null && planta.descripcion!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(planta.descripcion!, style: const TextStyle(color: colorTexto)),
+                ],
+              ],
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -183,33 +245,124 @@ class _TarjetaCuidado extends StatelessWidget {
 
   final Cuidado cuidado;
 
-  IconData get _icono => switch (cuidado.tipo) {
-        'RIEGO' => Icons.water_drop_outlined,
-        'FERTILIZACION' => Icons.science_outlined,
-        'PODA' => Icons.content_cut,
-        'EXPOSICION_LUZ' => Icons.wb_sunny_outlined,
-        'TRASPLANTE' => Icons.yard_outlined,
-        _ => Icons.eco_outlined,
-      };
+  /// Texto y colores del estado según los días que faltan.
+  Insignia _estado() {
+    if (cuidado.finalizado) {
+      return const Insignia(
+        texto: 'Periodo terminado',
+        icono: Icons.flag_outlined,
+        fondo: Insignia.fondoGris,
+        colorTexto: Insignia.textoGris,
+      );
+    }
+    final dias = cuidado.diasRestantes();
+    if (dias < 0) {
+      return Insignia(
+        texto: 'Atrasado ${-dias} ${dias == -1 ? 'día' : 'días'}',
+        icono: Icons.warning_amber_rounded,
+        fondo: Insignia.fondoRojo,
+        colorTexto: Insignia.textoRojo,
+      );
+    }
+    if (dias == 0) {
+      return const Insignia(
+        texto: 'Toca hoy',
+        icono: Icons.notifications_active_outlined,
+        fondo: Insignia.fondoAmarillo,
+        colorTexto: Insignia.textoAmarillo,
+      );
+    }
+    return Insignia(
+      texto: 'En $dias ${dias == 1 ? 'día' : 'días'}',
+      icono: Icons.schedule,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final dias = cuidado.frecuenciaDias == 1 ? 'día' : 'días';
-    return Card(
-      child: ListTile(
-        leading: Icon(_icono, color: verdePlantacert),
-        title: Text(cuidado.tipoTexto,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Cada ${cuidado.frecuenciaDias} $dias · '
-                'Último: ${fechaATexto(cuidado.fechaUltimoCuidado)}'),
-            if (cuidado.notas != null && cuidado.notas!.isNotEmpty)
-              Text(cuidado.notas!, maxLines: 2, overflow: TextOverflow.ellipsis),
-          ],
-        ),
+    final inicio = cuidado.fechaInicio;
+    final fin = cuidado.fechaFin;
+    return TarjetaSuave(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: verdeSuave,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(iconoCuidado(cuidado.tipo), color: verdePlantacert),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      cuidado.tipoTexto,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: verdeOscuro,
+                      ),
+                    ),
+                    _estado(),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Cada ${cuidado.frecuenciaDias} $dias · '
+                  'Último: ${fechaATexto(cuidado.fechaUltimoCuidado)}',
+                  style: const TextStyle(color: colorTextoSuave),
+                ),
+                if (inicio != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.date_range_outlined,
+                          size: 15, color: verdeMedio),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          fin == null
+                              ? 'Desde ${fechaLegible(inicio)} · sin fecha de fin'
+                              : 'Del ${fechaLegible(inicio)} al ${fechaLegible(fin)}',
+                          style: const TextStyle(color: colorTextoSuave, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (!cuidado.finalizado) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Próximo: ${fechaLegible(cuidado.proximaFecha)}',
+                    style: const TextStyle(color: colorTextoSuave, fontSize: 13),
+                  ),
+                ],
+                if (cuidado.notas != null && cuidado.notas!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    cuidado.notas!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontStyle: FontStyle.italic, color: colorTexto),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

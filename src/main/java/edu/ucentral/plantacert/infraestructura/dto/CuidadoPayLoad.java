@@ -29,6 +29,12 @@ public record CuidadoPayLoad(
         @PastOrPresent(message = "La fecha del último cuidado no puede ser una fecha futura")
         LocalDate fechaUltimoCuidado,
 
+        /** Primer día del periodo. Opcional: si no llega se usa la fecha del último cuidado. */
+        LocalDate fechaInicio,
+
+        /** Último día del periodo. Opcional: si no llega el cuidado no tiene fecha de fin. */
+        LocalDate fechaFin,
+
         @Size(max = 500, message = "Las notas no pueden superar 500 caracteres")
         String notas
 ) {

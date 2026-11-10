@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:plantacert_app/core/api_excepcion.dart';
 import 'package:plantacert_app/core/sesion.dart';
 import 'package:plantacert_app/plantas/catalogo_pantalla.dart';
+import 'package:plantacert_app/plantas/planta.dart';
 import 'package:plantacert_app/plantas/planta_servicio.dart';
 
 http.Response _json(Object cuerpo, int status) => http.Response.bytes(
@@ -110,9 +111,12 @@ void main() {
       _servicioQueResponde([_planta(3, 'Tercera'), _planta(2, 'Segunda')]),
     );
 
-    final arriba = tester.getTopLeft(find.text('Tercera')).dy;
-    final abajo = tester.getTopLeft(find.text('Segunda')).dy;
-    expect(arriba, lessThan(abajo));
+    // En la cuadrícula se lee de izquierda a derecha y de arriba hacia abajo
+    final primera = tester.getTopLeft(find.text('Tercera'));
+    final segunda = tester.getTopLeft(find.text('Segunda'));
+    final vaAntes = primera.dy < segunda.dy ||
+        (primera.dy == segunda.dy && primera.dx < segunda.dx);
+    expect(vaAntes, isTrue);
   });
 
   testWidgets('catálogo vacío indica que está vacío', (tester) async {
@@ -157,6 +161,61 @@ void main() {
         tester, _servicioQueResponde({'mensaje': 'Error interno'}, 500));
 
     expect(find.textContaining('El servidor tuvo un problema'), findsOneWidget);
+  });
+
+  group('RQ-17: barra de búsqueda', () {
+    final plantas = [
+      _planta(1, 'Helecho'),
+      _planta(2, 'Monstera'),
+      _planta(3, 'Árbol de limón'),
+    ];
+
+    testWidgets('filtra por una parte del nombre', (tester) async {
+      await _abrirCatalogo(tester, _servicioQueResponde(plantas));
+
+      await tester.enterText(find.byKey(const Key('catalogo_buscar')), 'mons');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Monstera'), findsOneWidget);
+      expect(find.text('Helecho'), findsNothing);
+      expect(find.text('Mostrando 1 de 3'), findsOneWidget);
+    });
+
+    testWidgets('filtra por la especie e ignora mayúsculas y tildes', (tester) async {
+      await _abrirCatalogo(tester, _servicioQueResponde(plantas));
+
+      await tester.enterText(find.byKey(const Key('catalogo_buscar')), 'ESPECIE 3');
+      await tester.pumpAndSettle();
+      expect(find.text('Árbol de limón'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('catalogo_buscar')), 'arbol');
+      await tester.pumpAndSettle();
+      expect(find.text('Árbol de limón'), findsOneWidget);
+      expect(find.text('Monstera'), findsNothing);
+    });
+
+    testWidgets('sin coincidencias muestra un mensaje y permite limpiar',
+        (tester) async {
+      await _abrirCatalogo(tester, _servicioQueResponde(plantas));
+
+      await tester.enterText(find.byKey(const Key('catalogo_buscar')), 'cactus');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('catalogo_sin_resultados')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('catalogo_limpiar_busqueda')));
+      await tester.pumpAndSettle();
+      expect(find.text('Helecho'), findsOneWidget);
+      expect(find.text('Monstera'), findsOneWidget);
+    });
+
+    test('filtrarPlantas conserva el orden y con texto vacío devuelve todo', () {
+      final lista = [
+        for (final json in plantas) Planta.desdeJson(json),
+      ];
+      expect(filtrarPlantas(lista, '  '), lista);
+      expect(filtrarPlantas(lista, 'e').map((p) => p.id), [1, 2, 3]);
+      expect(normalizarTexto(' Árbol Ñandú '), 'arbol nandu');
+    });
   });
 
   group('mensajeErrorCatalogo', () {

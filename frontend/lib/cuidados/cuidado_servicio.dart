@@ -21,6 +21,8 @@ class CuidadoServicio {
     required String tipo,
     required int frecuenciaDias,
     required DateTime fechaUltimoCuidado,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
     String? notas,
   }) async {
     final http.Response respuesta;
@@ -32,6 +34,8 @@ class CuidadoServicio {
           'tipo': tipo,
           'frecuenciaDias': frecuenciaDias,
           'fechaUltimoCuidado': fechaATexto(fechaUltimoCuidado),
+          'fechaInicio': fechaInicio == null ? null : fechaATexto(fechaInicio),
+          'fechaFin': fechaFin == null ? null : fechaATexto(fechaFin),
           'notas': notas?.trim() ?? '',
         }),
       );
