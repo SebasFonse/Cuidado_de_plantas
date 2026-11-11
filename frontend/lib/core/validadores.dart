@@ -76,4 +76,24 @@ class Validadores {
     }
     return null;
   }
+
+  /// Primer día del periodo del cuidado: obligatorio, puede ser pasado o futuro.
+  static String? fechaInicio(String? valor) {
+    final vacio = requerido(valor, 'El primer día es requerido');
+    if (vacio != null) return vacio;
+    if (leerFecha(valor) == null) return 'Escribe la fecha con el formato AAAA-MM-DD';
+    return null;
+  }
+
+  /// Último día del periodo: opcional, pero no puede ser antes del primer día.
+  static String? fechaFin(String? valor, String? inicio) {
+    if (valor == null || valor.trim().isEmpty) return null;
+    final fin = leerFecha(valor);
+    if (fin == null) return 'Escribe la fecha con el formato AAAA-MM-DD';
+    final desde = leerFecha(inicio);
+    if (desde != null && fin.isBefore(desde)) {
+      return 'El último día no puede ser antes del primer día';
+    }
+    return null;
+  }
 }
