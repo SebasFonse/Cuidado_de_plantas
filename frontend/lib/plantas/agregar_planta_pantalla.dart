@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
 import '../core/validadores.dart';
+import '../especies/especie.dart';
+import '../especies/especie_servicio.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
 
@@ -12,9 +14,10 @@ import 'planta_servicio.dart';
 ///
 /// Al guardar, devuelve la [Planta] creada con Navigator.pop.
 class AgregarPlantaPantalla extends StatefulWidget {
-  const AgregarPlantaPantalla({super.key, this.servicio});
+  const AgregarPlantaPantalla({super.key, this.servicio, this.servicioEspecies});
 
   final PlantaServicio? servicio;
+  final EspecieServicio? servicioEspecies;
 
   @override
   State<AgregarPlantaPantalla> createState() => _AgregarPlantaPantallaState();
@@ -27,7 +30,11 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
   final _ubicacionCtrl = TextEditingController();
   final _descripcionCtrl = TextEditingController();
   final _imagenCtrl = TextEditingController();
+  final _especieFoco = FocusNode();
   late final PlantaServicio _servicio;
+
+  /// Base de datos de especies para sugerir mientras se escribe.
+  List<Especie> _especies = [];
 
   bool _guardando = false;
   String? _error;
@@ -37,6 +44,12 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
     super.initState();
     _servicio = widget.servicio ?? PlantaServicio();
     _imagenCtrl.addListener(() => setState(() {}));
+    _cargarEspecies();
+  }
+
+  Future<void> _cargarEspecies() async {
+    final especies = await (widget.servicioEspecies ?? EspecieServicio()).listar();
+    if (mounted) setState(() => _especies = especies);
   }
 
   @override
@@ -46,6 +59,7 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
     _ubicacionCtrl.dispose();
     _descripcionCtrl.dispose();
     _imagenCtrl.dispose();
+    _especieFoco.dispose();
     super.dispose();
   }
 
@@ -109,17 +123,60 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
                         Validadores.maximo(v, 100, 'El nombre no puede superar 100 caracteres'),
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    key: const Key('planta_especie'),
-                    controller: _especieCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Especie *',
-                      hintText: 'Ej: Monstera deliciosa',
-                      prefixIcon: Icon(Icons.spa_outlined),
+                  // Base de datos de especies: sugerencias mientras se escribe
+                  RawAutocomplete<Especie>(
+                    textEditingController: _especieCtrl,
+                    focusNode: _especieFoco,
+                    displayStringForOption: (e) => e.nombreCientifico,
+                    optionsBuilder: (valor) =>
+                        filtrarEspecies(_especies, valor.text).take(8),
+                    fieldViewBuilder: (context, controller, foco, alEnviar) =>
+                        TextFormField(
+                      key: const Key('planta_especie'),
+                      controller: controller,
+                      focusNode: foco,
+                      onFieldSubmitted: (_) => alEnviar(),
+                      decoration: InputDecoration(
+                        labelText: 'Especie *',
+                        hintText: 'Ej: Monstera deliciosa',
+                        prefixIcon: const Icon(Icons.spa_outlined),
+                        helperText: _especies.isEmpty
+                            ? null
+                            : 'Escribe y elige de ${_especies.length} especies registradas',
+                      ),
+                      validator: (v) =>
+                          Validadores.requerido(v, 'La especie es requerida') ??
+                          Validadores.maximo(v, 100, 'La especie no puede superar 100 caracteres'),
                     ),
-                    validator: (v) =>
-                        Validadores.requerido(v, 'La especie es requerida') ??
-                        Validadores.maximo(v, 100, 'La especie no puede superar 100 caracteres'),
+                    optionsViewBuilder: (context, alElegir, opciones) => Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        child: ConstrainedBox(
+                          constraints:
+                              const BoxConstraints(maxHeight: 260, maxWidth: 480),
+                          child: ListView(
+                            key: const Key('planta_especie_opciones'),
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            children: [
+                              for (final especie in opciones)
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.eco_outlined),
+                                  title: Text(
+                                    especie.nombreCientifico,
+                                    style: const TextStyle(fontStyle: FontStyle.italic),
+                                  ),
+                                  subtitle: Text(especie.nombreComun),
+                                  onTap: () => alElegir(especie),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

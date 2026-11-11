@@ -122,6 +122,107 @@ void main() {
     expect(find.text('Agua reposada'), findsOneWidget);
   });
 
+  testWidgets('el primer día viene con la fecha de hoy y el último día es opcional',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AgregarCuidadoPantalla(
+          plantaId: 5, nombrePlanta: 'Monstera', servicio: _backendSimulado()),
+    ));
+
+    final inicio = tester.widget<TextFormField>(
+        find.byKey(const Key('cuidado_fecha_inicio')));
+    expect(inicio.controller!.text, fechaATexto(DateTime.now()));
+    expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('cuidado_fecha_fin')))
+            .controller!
+            .text,
+        isEmpty);
+  });
+
+  testWidgets('no deja que el último día sea antes del primer día', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AgregarCuidadoPantalla(
+          plantaId: 5, nombrePlanta: 'Monstera', servicio: _backendSimulado()),
+    ));
+
+    await _elegirTipo(tester, 'Riego');
+    await tester.enterText(find.byKey(const Key('cuidado_frecuencia')), '3');
+    await tester.enterText(find.byKey(const Key('cuidado_fecha')), _ayer());
+    await tester.enterText(find.byKey(const Key('cuidado_fecha_inicio')), '2026-11-10');
+    await tester.enterText(find.byKey(const Key('cuidado_fecha_fin')), '2026-11-01');
+    await _tocar(tester, find.byKey(const Key('cuidado_guardar')));
+
+    expect(find.text('El último día no puede ser antes del primer día'), findsOneWidget);
+    expect(find.byType(AgregarCuidadoPantalla), findsOneWidget);
+  });
+
+  testWidgets('el atajo "1 mes" llena el último día y se envía el periodo',
+      (tester) async {
+    Map<String, dynamic>? enviado;
+    final servicio = CuidadoServicio(
+      cliente: MockClient((request) async {
+        if (request.method != 'POST') return _json([], 200);
+        enviado = jsonDecode(request.body) as Map<String, dynamic>;
+        return _json({
+          'id': 1,
+          ...enviado!,
+          'fechaRegistro': '2026-11-09T10:00:00',
+          'plantaId': 5,
+        }, 201);
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: DetallePlantaPantalla(planta: _monstera, servicioCuidados: servicio),
+    ));
+    await tester.pumpAndSettle();
+    await _tocar(tester, find.byKey(const Key('boton_agregar_cuidado')));
+
+    await _elegirTipo(tester, 'Riego');
+    await tester.enterText(find.byKey(const Key('cuidado_frecuencia')), '2');
+    await tester.enterText(find.byKey(const Key('cuidado_fecha')), _ayer());
+    await tester.enterText(find.byKey(const Key('cuidado_fecha_inicio')), '2026-12-01');
+    await tester.pump();
+    await _tocar(tester, find.text('1 mes'));
+
+    expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('cuidado_fecha_fin')))
+            .controller!
+            .text,
+        '2026-12-31');
+    expect(find.byKey(const Key('cuidado_resumen')), findsOneWidget);
+
+    await _tocar(tester, find.byKey(const Key('cuidado_guardar')));
+
+    expect(enviado!['fechaInicio'], '2026-12-01');
+    expect(enviado!['fechaFin'], '2026-12-31');
+  });
+
+  testWidgets('la tarjeta del cuidado muestra el periodo', (tester) async {
+    final servicio = CuidadoServicio(
+      cliente: MockClient((_) async => _json([
+            {
+              'id': 1,
+              'tipo': 'RIEGO',
+              'frecuenciaDias': 2,
+              'fechaUltimoCuidado': '2026-11-01',
+              'fechaInicio': '2026-11-01',
+              'fechaFin': '2026-11-30',
+              'notas': null,
+              'fechaRegistro': '2026-11-01T10:00:00',
+              'plantaId': 5,
+            }
+          ], 200)),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: DetallePlantaPantalla(planta: _monstera, servicioCuidados: servicio),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Del 1 nov 2026 al 30 nov 2026'), findsOneWidget);
+  });
+
   testWidgets('si la planta no es del usuario muestra el error del servidor',
       (tester) async {
     final servicio = CuidadoServicio(

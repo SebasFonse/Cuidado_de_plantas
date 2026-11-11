@@ -46,7 +46,11 @@ public class CuidadoServicioTest {
     }
 
     private CuidadoPayLoad payLoad(String notas) {
-        return new CuidadoPayLoad("RIEGO", 3, LocalDate.now().minusDays(1), notas);
+        return new CuidadoPayLoad("RIEGO", 3, LocalDate.now().minusDays(1), null, null, notas);
+    }
+
+    private CuidadoPayLoad payLoadConPeriodo(LocalDate inicio, LocalDate fin) {
+        return new CuidadoPayLoad("RIEGO", 3, LocalDate.now().minusDays(1), inicio, fin, null);
     }
 
     @Test
@@ -102,6 +106,41 @@ public class CuidadoServicioTest {
 
         assertThrows(NegocioException.class,
                 () -> cuidadoServicio.registrar(1L, 99L, payLoad(null)));
+        verify(cuidadoRepositorio, never()).persist(any(Cuidado.class));
+    }
+
+    @Test
+    public void testRegistrarCuidadoGuardaPrimerYUltimoDia() {
+        when(plantaRepositorio.findByIdOptional(10L)).thenReturn(Optional.of(plantaDelUsuario(1L)));
+        LocalDate inicio = LocalDate.now();
+        LocalDate fin = inicio.plusDays(30);
+
+        CuidadoRespuesta respuesta = cuidadoServicio.registrar(1L, 10L, payLoadConPeriodo(inicio, fin));
+
+        assertEquals(inicio, respuesta.fechaInicio());
+        assertEquals(fin, respuesta.fechaFin());
+    }
+
+    @Test
+    public void testRegistrarCuidadoSinPrimerDiaUsaElUltimoCuidado() {
+        when(plantaRepositorio.findByIdOptional(10L)).thenReturn(Optional.of(plantaDelUsuario(1L)));
+
+        CuidadoRespuesta respuesta = cuidadoServicio.registrar(1L, 10L, payLoad(null));
+
+        assertEquals(LocalDate.now().minusDays(1), respuesta.fechaInicio());
+        assertNull(respuesta.fechaFin());
+    }
+
+    @Test
+    public void testRegistrarCuidadoUltimoDiaAntesDelPrimero() {
+        when(plantaRepositorio.findByIdOptional(10L)).thenReturn(Optional.of(plantaDelUsuario(1L)));
+        LocalDate inicio = LocalDate.now();
+
+        NegocioException error = assertThrows(NegocioException.class,
+                () -> cuidadoServicio.registrar(1L, 10L, payLoadConPeriodo(inicio, inicio.minusDays(1))));
+
+        assertEquals(400, error.getStatus());
+        assertEquals("CERT-ERR-C2", error.getCodigo());
         verify(cuidadoRepositorio, never()).persist(any(Cuidado.class));
     }
 }

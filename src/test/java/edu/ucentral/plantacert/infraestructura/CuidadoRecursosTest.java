@@ -80,6 +80,54 @@ public class CuidadoRecursosTest {
     }
 
     @Test
+    public void testRegistrarCuidadoConPeriodo() {
+        Long[] ids = crearUsuarioConPlanta();
+        String hoy = LocalDate.now().toString();
+        String fin = LocalDate.now().plusDays(30).toString();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {
+                        "tipo": "RIEGO",
+                        "frecuenciaDias": 2,
+                        "fechaUltimoCuidado": "%s",
+                        "fechaInicio": "%s",
+                        "fechaFin": "%s"
+                      }
+                      """.formatted(hoy, hoy, fin))
+        .when()
+                .post(url(ids[0], ids[1]))
+        .then()
+                .statusCode(201)
+                .body("fechaInicio", is(hoy))
+                .body("fechaFin", is(fin));
+    }
+
+    @Test
+    public void testRegistrarCuidadoUltimoDiaAntesDelPrimero() {
+        Long[] ids = crearUsuarioConPlanta();
+        String hoy = LocalDate.now().toString();
+        String ayer = LocalDate.now().minusDays(1).toString();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                      {
+                        "tipo": "RIEGO",
+                        "frecuenciaDias": 2,
+                        "fechaUltimoCuidado": "%s",
+                        "fechaInicio": "%s",
+                        "fechaFin": "%s"
+                      }
+                      """.formatted(ayer, hoy, ayer))
+        .when()
+                .post(url(ids[0], ids[1]))
+        .then()
+                .statusCode(400);
+    }
+
+    @Test
     public void testRegistrarCuidadoTipoInvalido() {
         Long[] ids = crearUsuarioConPlanta();
         given()
