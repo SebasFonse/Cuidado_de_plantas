@@ -168,6 +168,8 @@ class _MiniPlanta extends StatelessWidget {
             FotoPlanta(
               imagenUrl: planta.imagenUrl,
               plantaId: planta.id,
+              nombre: planta.nombre,
+              especie: planta.especie,
               radio: 16,
               ancho: 112,
               alto: 112,

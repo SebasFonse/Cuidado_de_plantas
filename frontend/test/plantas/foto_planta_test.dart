@@ -9,6 +9,7 @@ import 'package:plantacert_app/cuidados/agregar_cuidado_pantalla.dart';
 import 'package:plantacert_app/inicio/inicio_pantalla.dart';
 import 'package:plantacert_app/plantas/foto_planta.dart';
 import 'package:plantacert_app/plantas/planta_servicio.dart';
+import 'package:plantacert_app/plantas/tipo_planta.dart';
 
 http.Response _json(Object cuerpo, int status) => http.Response.bytes(
       utf8.encode(jsonEncode(cuerpo)),
@@ -75,5 +76,50 @@ void main() {
     expect(find.byKey(const Key('inicio_fotos_plantas')), findsOneWidget);
     expect(find.text('Monstera'), findsOneWidget);
     expect(find.text('Helecho'), findsOneWidget);
+  });
+
+  group('tipo de planta según nombre y especie', () {
+    String emoji({String? nombre, String? especie}) =>
+        tipoDePlanta(nombre: nombre, especie: especie).emoji;
+
+    test('cactus y suculentas, aunque se escriba "Captus"', () {
+      expect(emoji(nombre: 'Captus'), '🌵');
+      expect(emoji(especie: 'Aloe vera'), '🌵');
+      expect(emoji(nombre: 'Árbol de jade', especie: 'Crassula ovata'), '🌵');
+    });
+
+    test('orquídea, con o sin tilde', () {
+      expect(emoji(nombre: 'Orquidia'), '🌸');
+      expect(emoji(especie: 'Phalaenopsis amabilis'), '🌸');
+      expect(emoji(nombre: 'Orquídea mariposa'), '🌸');
+    });
+
+    test('la especie manda sobre el nombre', () {
+      expect(emoji(nombre: 'Mi planta', especie: 'Rosa chinensis'), '🌹');
+      expect(emoji(nombre: 'Rosita', especie: 'Ficus lyrata'), '🌳');
+    });
+
+    test('otras especies de la base de datos', () {
+      expect(emoji(especie: 'Helianthus annuus'), '🌻');
+      expect(emoji(especie: 'Ocimum basilicum'), '🌿');
+      expect(emoji(especie: 'Citrus limon'), '🍋');
+      expect(emoji(especie: 'Dypsis lutescens'), '🌴');
+    });
+
+    test('si no se reconoce, se usa la planta en maceta', () {
+      expect(emoji(nombre: 'Monstera', especie: 'Monstera deliciosa'), '🪴');
+      expect(emoji(), '🪴');
+    });
+  });
+
+  testWidgets('sin foto, el ícono corresponde al tipo de planta',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: FotoPlanta(imagenUrl: null, nombre: 'Captus', ancho: 100, alto: 100),
+      ),
+    ));
+
+    expect(find.text('🌵'), findsOneWidget);
   });
 }

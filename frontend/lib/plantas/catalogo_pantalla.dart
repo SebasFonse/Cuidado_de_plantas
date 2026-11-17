@@ -365,6 +365,8 @@ class TarjetaPlanta extends StatelessWidget {
                 FotoPlanta(
                   imagenUrl: planta.imagenUrl,
                   plantaId: planta.id,
+                  nombre: planta.nombre,
+                  especie: planta.especie,
                   radio: 0,
                   ancho: double.infinity,
                   alto: 150,

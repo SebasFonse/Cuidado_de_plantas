@@ -10,6 +10,7 @@ import '../especies/especie_servicio.dart';
 import 'foto_planta.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
+import 'tipo_planta.dart';
 
 /// RQ4-HU01: Como usuario, quiero agregar una planta nueva a mi catálogo
 /// ingresando su nombre, especie, ubicación, descripción y una foto mediante
@@ -47,6 +48,9 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
     super.initState();
     _servicio = widget.servicio ?? PlantaServicio();
     _imagenCtrl.addListener(() => setState(() {}));
+    // El ícono de la vista previa cambia según el nombre y la especie
+    _nombreCtrl.addListener(() => setState(() {}));
+    _especieCtrl.addListener(() => setState(() {}));
     _cargarEspecies();
   }
 
@@ -244,10 +248,21 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
                   FotoPlanta(
                     key: const Key('planta_vista_previa'),
                     imagenUrl: _hayVistaPrevia ? _imagenCtrl.text : null,
+                    nombre: _nombreCtrl.text,
+                    especie: _especieCtrl.text,
                     ancho: double.infinity,
                     alto: 180,
                     tamanoIcono: 56,
                   ),
+                  if (!_hayVistaPrevia) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sin foto se mostrará el ícono de: '
+                      '${tipoDePlanta(nombre: _nombreCtrl.text, especie: _especieCtrl.text).etiqueta.toLowerCase()}',
+                      key: const Key('planta_tipo_detectado'),
+                      style: const TextStyle(color: colorTextoSuave, fontSize: 12),
+                    ),
+                  ],
                       ],
                     ),
                   ),

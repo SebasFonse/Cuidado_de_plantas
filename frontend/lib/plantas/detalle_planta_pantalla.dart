@@ -70,6 +70,7 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
           plantaId: widget.planta.id,
           nombrePlanta: widget.planta.nombre,
           imagenUrl: widget.planta.imagenUrl,
+          especiePlanta: widget.planta.especie,
           servicio: _servicio,
         ),
       ),
@@ -203,6 +204,8 @@ class _Encabezado extends StatelessWidget {
               FotoPlanta(
                 imagenUrl: planta.imagenUrl,
                 plantaId: planta.id,
+                nombre: planta.nombre,
+                especie: planta.especie,
                 radio: 0,
                 ancho: double.infinity,
                 alto: 240,

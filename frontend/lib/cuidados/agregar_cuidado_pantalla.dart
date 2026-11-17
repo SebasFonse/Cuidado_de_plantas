@@ -20,6 +20,7 @@ class AgregarCuidadoPantalla extends StatefulWidget {
     required this.plantaId,
     required this.nombrePlanta,
     this.imagenUrl,
+    this.especiePlanta,
     this.servicio,
   });
 
@@ -29,6 +30,9 @@ class AgregarCuidadoPantalla extends StatefulWidget {
   /// Foto de la planta: se muestra en el encabezado para saber a cuál
   /// planta se le programa el cuidado.
   final String? imagenUrl;
+
+  /// Especie: elige el ícono de la planta cuando no tiene foto.
+  final String? especiePlanta;
   final CuidadoServicio? servicio;
 
   @override
@@ -332,6 +336,8 @@ class _AgregarCuidadoPantallaState extends State<AgregarCuidadoPantalla> {
                   child: FotoPlanta(
                     imagenUrl: widget.imagenUrl,
                     plantaId: widget.plantaId,
+                    nombre: widget.nombrePlanta,
+                    especie: widget.especiePlanta,
                     radio: 14,
                     ancho: 60,
                     alto: 60,
