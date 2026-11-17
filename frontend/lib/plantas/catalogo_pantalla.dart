@@ -7,8 +7,11 @@ import '../core/sesion.dart';
 import '../core/texto.dart';
 import 'agregar_planta_pantalla.dart';
 import 'detalle_planta_pantalla.dart';
+import 'foto_planta.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
+
+export 'foto_planta.dart' show ImagenPorDefecto, FotoPlanta;
 
 /// HU04: Como usuario, quiero ver el listado de todas las plantas registradas
 /// en mi catálogo con su nombre, especie, ubicación e imagen, para poder
@@ -340,12 +343,11 @@ class TarjetaPlanta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagen = planta.imagenUrl?.trim();
     return Material(
       key: Key('tarjeta_planta_${planta.id}'),
       color: colorSuperficie,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: colorBorde),
       ),
       clipBehavior: Clip.antiAlias,
@@ -354,81 +356,74 @@ class TarjetaPlanta extends StatelessWidget {
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => DetallePlantaPantalla(planta: planta)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 140,
-                  width: double.infinity,
-                  child: (imagen == null || imagen.isEmpty)
-                      ? const ImagenPorDefecto()
-                      : Image.network(
-                          imagen,
-                          fit: BoxFit.cover,
-                          // Si el enlace no carga se muestra la imagen por defecto
-                          errorBuilder: (_, __, ___) => const ImagenPorDefecto(),
-                        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                // La misma foto viaja al detalle y al formulario de cuidados
+                FotoPlanta(
+                  imagenUrl: planta.imagenUrl,
+                  plantaId: planta.id,
+                  radio: 0,
+                  ancho: double.infinity,
+                  alto: 150,
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                planta.nombre,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: verdeOscuro,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                planta.especie,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: colorTextoSuave,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Flexible(
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  right: 10,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
                     child: Insignia(
                       texto: planta.ubicacion,
                       icono: Icons.place_outlined,
+                      fondo: const Color(0xE6FFFFFF),
+                      colorTexto: verdeOscuro,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Spacer(),
-                  const Icon(Icons.arrow_forward, size: 18, color: verdeMedio),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          planta.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: verdeOscuro,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          planta.especie,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: colorTextoSuave,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: verdeMedio),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
-
-/// Imagen que se muestra cuando la planta no tiene foto o el enlace no carga.
-class ImagenPorDefecto extends StatelessWidget {
-  const ImagenPorDefecto({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: const Key('imagen_por_defecto'),
-      decoration: const BoxDecoration(gradient: degradadoHoja),
-      alignment: Alignment.center,
-      child: const Icon(Icons.local_florist, color: verdePlantacert, size: 48),
     );
   }
 }

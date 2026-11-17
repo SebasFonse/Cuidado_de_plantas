@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../app/componentes.dart';
+import '../app/tema.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
 import '../core/validadores.dart';
 import '../especies/especie.dart';
 import '../especies/especie_servicio.dart';
+import 'foto_planta.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
 
@@ -102,14 +105,22 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
       appBar: AppBar(title: const Text('Agregar planta')),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: 560),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _encabezado(),
+                  const SizedBox(height: 20),
+                  TarjetaSuave(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                  const TituloSeccion('DATOS DE LA PLANTA', icono: Icons.eco_outlined),
+                  const SizedBox(height: 12),
                   TextFormField(
                     key: const Key('planta_nombre'),
                     controller: _nombreCtrl,
@@ -202,7 +213,21 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
                       alignLabelWithHint: true,
                     ),
                   ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TarjetaSuave(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                  const TituloSeccion('FOTO', icono: Icons.photo_camera_outlined),
                   const SizedBox(height: 4),
+                  const Text(
+                    'Esta foto te acompaña en el catálogo, en la página de la planta y en sus cuidados.',
+                    style: TextStyle(color: colorTextoSuave, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
                   TextFormField(
                     key: const Key('planta_imagen'),
                     controller: _imagenCtrl,
@@ -214,37 +239,21 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
                     ),
                     validator: Validadores.urlOpcional,
                   ),
-                  if (_hayVistaPrevia) ...[
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        _imagenCtrl.text.trim(),
-                        height: 180,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox(
-                          height: 60,
-                          child: Center(child: Text('No se pudo cargar la vista previa')),
-                        ),
-                      ),
+                  const SizedBox(height: 12),
+                  // Vista previa: así se verá la planta en todos los módulos
+                  FotoPlanta(
+                    key: const Key('planta_vista_previa'),
+                    imagenUrl: _hayVistaPrevia ? _imagenCtrl.text : null,
+                    ancho: double.infinity,
+                    alto: 180,
+                    tamanoIcono: 56,
+                  ),
+                      ],
                     ),
-                  ],
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
-                    Container(
-                      key: const Key('planta_error'),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
+                    CajaError(key: const Key('planta_error'), mensaje: _error!),
                   ],
                   const SizedBox(height: 20),
                   FilledButton.icon(
@@ -254,7 +263,8 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
                         ? const SizedBox(
                             height: 18,
                             width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.save_outlined),
                     label: const Text('Guardar planta'),
@@ -264,6 +274,50 @@ class _AgregarPlantaPantallaState extends State<AgregarPlantaPantalla> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _encabezado() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: degradadoOscuro,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0x26FFFFFF),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.local_florist, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nueva planta',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Agrégala a tu catálogo con su foto y ubicación',
+                  style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

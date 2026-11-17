@@ -5,11 +5,51 @@ import '../app/tema.dart';
 import '../auth/login_pantalla.dart';
 import '../core/sesion.dart';
 import '../plantas/catalogo_pantalla.dart';
+import '../plantas/detalle_planta_pantalla.dart';
+import '../plantas/foto_planta.dart';
+import '../plantas/planta.dart';
+import '../plantas/planta_servicio.dart';
 
 /// Pantalla principal después de ingresar.
 /// Cada historia de usuario agrega aquí su opción de menú.
-class InicioPantalla extends StatelessWidget {
-  const InicioPantalla({super.key});
+class InicioPantalla extends StatefulWidget {
+  const InicioPantalla({super.key, this.servicio});
+
+  final PlantaServicio? servicio;
+
+  @override
+  State<InicioPantalla> createState() => _InicioPantallaState();
+}
+
+class _InicioPantallaState extends State<InicioPantalla> {
+  late final PlantaServicio _servicio;
+
+  /// Plantas del usuario para mostrar sus fotos en el inicio.
+  List<Planta> _plantas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _servicio = widget.servicio ?? PlantaServicio();
+    _cargarPlantas();
+  }
+
+  Future<void> _cargarPlantas() async {
+    final usuarioId = Sesion.usuarioId;
+    if (usuarioId == null) return;
+    try {
+      final plantas = await _servicio.listar(usuarioId);
+      if (mounted) setState(() => _plantas = plantas);
+    } catch (_) {
+      // Si falla, el inicio sigue funcionando sin la fila de fotos
+    }
+  }
+
+  Future<void> _abrir(Widget pantalla) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => pantalla));
+    // Al volver se actualizan las fotos (por si se agregó una planta)
+    await _cargarPlantas();
+  }
 
   void _cerrarSesion(BuildContext context) {
     Sesion.cerrar();
@@ -80,12 +120,70 @@ class InicioPantalla extends StatelessWidget {
                 icono: Icons.local_florist,
                 titulo: 'Mis plantas',
                 descripcion: 'Consulta tu catálogo, busca y agrega plantas nuevas',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CatalogoPantalla()),
-                ),
+                onTap: () => _abrir(const CatalogoPantalla()),
               ),
+              if (_plantas.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                const TituloSeccion('TUS PLANTAS', icono: Icons.local_florist_outlined),
+                const SizedBox(height: 12),
+                SizedBox(
+                  key: const Key('inicio_fotos_plantas'),
+                  height: 150,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _plantas.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) => _MiniPlanta(
+                      planta: _plantas[i],
+                      onTap: () => _abrir(DetallePlantaPantalla(planta: _plantas[i])),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Foto pequeña de una planta en el inicio; al tocarla abre su página.
+class _MiniPlanta extends StatelessWidget {
+  const _MiniPlanta({required this.planta, required this.onTap});
+
+  final Planta planta;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 112,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FotoPlanta(
+              imagenUrl: planta.imagenUrl,
+              plantaId: planta.id,
+              radio: 16,
+              ancho: 112,
+              alto: 112,
+              tamanoIcono: 36,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              planta.nombre,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: verdeOscuro,
+              ),
+            ),
+          ],
         ),
       ),
     );
