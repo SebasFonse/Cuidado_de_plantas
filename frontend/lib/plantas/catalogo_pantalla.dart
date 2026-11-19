@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../app/componentes.dart';
 import '../app/tema.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
+import '../core/texto.dart';
 import 'agregar_planta_pantalla.dart';
+import 'detalle_planta_pantalla.dart';
+import 'foto_planta.dart';
 import 'planta.dart';
 import 'planta_servicio.dart';
 
-/// Catálogo personal de plantas (permite ver la planta recién agregada).
+export 'foto_planta.dart' show ImagenPorDefecto, FotoPlanta;
+
+/// HU04: Como usuario, quiero ver el listado de todas las plantas registradas
+/// en mi catálogo con su nombre, especie, ubicación e imagen, para poder
+/// consultar rápidamente mi colección y encontrar la planta que necesito.
 class CatalogoPantalla extends StatefulWidget {
   const CatalogoPantalla({super.key, this.servicio});
 
@@ -22,6 +30,14 @@ class _CatalogoPantallaState extends State<CatalogoPantalla> {
   List<Planta> _plantas = [];
   bool _cargando = true;
   String? _error;
+  final _busquedaCtrl = TextEditingController();
+  String _busqueda = '';
+
+  @override
+  void dispose() {
+    _busquedaCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -49,7 +65,7 @@ class _CatalogoPantallaState extends State<CatalogoPantalla> {
       setState(() => _plantas = plantas);
     } on ApiExcepcion catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.mensajeCompleto);
+      setState(() => _error = mensajeErrorCatalogo(e));
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
@@ -62,6 +78,10 @@ class _CatalogoPantallaState extends State<CatalogoPantalla> {
       ),
     );
     if (nueva == null || !mounted) return;
+    // La planta nueva aparece de inmediato arriba y luego se sincroniza con el backend
+    setState(() {
+      _plantas = [nueva, ..._plantas.where((p) => p.id != nueva.id)];
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Planta "${nueva.nombre}" agregada a tu catálogo'),
@@ -86,16 +106,34 @@ class _CatalogoPantallaState extends State<CatalogoPantalla> {
   }
 
   Widget _contenido() {
-    if (_cargando) {
-      return const Center(child: CircularProgressIndicator());
+    if (_cargando && _plantas.isEmpty) {
+      return const Center(
+        key: Key('catalogo_cargando'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Cargando tus plantas...'),
+          ],
+        ),
+      );
     }
     if (_error != null) {
       return Center(
+        key: const Key('catalogo_error'),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.redAccent),
+              const SizedBox(height: 12),
+              const Text(
+                'No se pudo cargar tu catálogo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 12),
               OutlinedButton(onPressed: _cargar, child: const Text('Reintentar')),
@@ -105,63 +143,286 @@ class _CatalogoPantallaState extends State<CatalogoPantalla> {
       );
     }
     if (_plantas.isEmpty) {
-      return const Center(
+      return Center(
+        key: const Key('catalogo_vacio'),
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Aún no tienes plantas registradas.\nUsa "Agregar planta" para empezar.',
-            textAlign: TextAlign.center,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                  gradient: degradadoHoja,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.yard_outlined, size: 48, color: verdePlantacert),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tu catálogo está vacío',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 18, color: verdeOscuro),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Aún no tienes plantas registradas.\nUsa "Agregar planta" para empezar.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorTextoSuave),
+              ),
+            ],
           ),
         ),
       );
     }
+
+    final filtradas = filtrarPlantas(_plantas, _busqueda);
+    final total = _plantas.length;
     return RefreshIndicator(
       onRefresh: _cargar,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-        itemCount: _plantas.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (_, i) => _TarjetaPlanta(planta: _plantas[i]),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: ListView(
+            key: const Key('catalogo_lista'),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+            children: [
+              Text(
+                '$total ${total == 1 ? 'planta registrada' : 'plantas registradas'}',
+                style: const TextStyle(color: colorTextoSuave, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              _barraBusqueda(),
+              if (_busqueda.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Mostrando ${filtradas.length} de $total',
+                  key: const Key('catalogo_conteo_busqueda'),
+                  style: const TextStyle(color: colorTextoSuave, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (filtradas.isEmpty)
+                _sinResultados()
+              else
+                LayoutBuilder(
+                  builder: (context, restricciones) {
+                    const espacio = 14.0;
+                    final ancho = restricciones.maxWidth;
+                    final columnas = (ancho / 230).floor().clamp(1, 4).toInt();
+                    final anchoTarjeta =
+                        (ancho - espacio * (columnas - 1)) / columnas;
+                    return Wrap(
+                      spacing: espacio,
+                      runSpacing: espacio,
+                      children: [
+                        for (final planta in filtradas)
+                          SizedBox(
+                            width: anchoTarjeta,
+                            child: TarjetaPlanta(planta: planta),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Barra de búsqueda por nombre o especie (RQ-17).
+  Widget _barraBusqueda() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: const [
+          BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 4)),
+        ],
+      ),
+      child: TextField(
+        key: const Key('catalogo_buscar'),
+        controller: _busquedaCtrl,
+        onChanged: (valor) => setState(() => _busqueda = valor),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Buscar por nombre o especie...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _busqueda.isEmpty
+              ? null
+              : IconButton(
+                  key: const Key('catalogo_limpiar_busqueda'),
+                  tooltip: 'Limpiar búsqueda',
+                  icon: const Icon(Icons.close),
+                  onPressed: _limpiarBusqueda,
+                ),
+          border: _bordeBusqueda(colorBorde),
+          enabledBorder: _bordeBusqueda(colorBorde),
+          focusedBorder: _bordeBusqueda(verdePlantacert),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  static OutlineInputBorder _bordeBusqueda(Color color) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(999),
+        borderSide: BorderSide(color: color, width: 1.5),
+      );
+
+  void _limpiarBusqueda() {
+    _busquedaCtrl.clear();
+    setState(() => _busqueda = '');
+  }
+
+  Widget _sinResultados() {
+    return Padding(
+      key: const Key('catalogo_sin_resultados'),
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          const Icon(Icons.search_off, size: 48, color: verdeClaro),
+          const SizedBox(height: 12),
+          Text(
+            'Ninguna planta coincide con "${_busqueda.trim()}"',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 16, color: verdeOscuro),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Prueba con otra parte del nombre o de la especie.',
+            style: TextStyle(color: colorTextoSuave),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _limpiarBusqueda,
+            icon: const Icon(Icons.close),
+            label: const Text('Limpiar búsqueda'),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _TarjetaPlanta extends StatelessWidget {
-  const _TarjetaPlanta({required this.planta});
+/// RQ-17: filtra por una parte del nombre o de la especie,
+/// sin importar mayúsculas ni tildes. Conserva el orden original.
+List<Planta> filtrarPlantas(List<Planta> plantas, String busqueda) {
+  final texto = normalizarTexto(busqueda);
+  if (texto.isEmpty) return plantas;
+  return plantas
+      .where((p) =>
+          normalizarTexto(p.nombre).contains(texto) ||
+          normalizarTexto(p.especie).contains(texto))
+      .toList();
+}
+
+
+/// HU04: mensaje contextual según el problema al consultar el catálogo.
+String mensajeErrorCatalogo(ApiExcepcion e) {
+  if (e.status == 0) {
+    return 'No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.';
+  }
+  if (e.status == 404) {
+    return 'No encontramos tu cuenta. Cierra sesión y vuelve a ingresar.';
+  }
+  if (e.status >= 500) {
+    return 'El servidor tuvo un problema al consultar tus plantas. Inténtalo más tarde.';
+  }
+  return e.mensajeCompleto;
+}
+
+/// HU04: tarjeta de una planta del catálogo con imagen, nombre, especie y ubicación.
+class TarjetaPlanta extends StatelessWidget {
+  const TarjetaPlanta({super.key, required this.planta});
 
   final Planta planta;
 
   @override
   Widget build(BuildContext context) {
-    final imagen = planta.imagenUrl;
-    return Card(
+    return Material(
+      key: Key('tarjeta_planta_${planta.id}'),
+      color: colorSuperficie,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: colorBorde),
+      ),
       clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: SizedBox(
-          width: 56,
-          height: 56,
-          child: imagen == null
-              ? const Icon(Icons.local_florist, color: verdePlantacert, size: 40)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    imagen,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.broken_image_outlined, size: 40),
-                  ),
-                ),
+      child: InkWell(
+        // HU08: al tocar la planta se abre su información con los cuidados
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DetallePlantaPantalla(planta: planta)),
         ),
-        title: Text(planta.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${planta.especie} · ${planta.ubicacion}'),
-            if (planta.descripcion != null && planta.descripcion!.isNotEmpty)
-              Text(planta.descripcion!, maxLines: 2, overflow: TextOverflow.ellipsis),
+            Stack(
+              children: [
+                // La misma foto viaja al detalle y al formulario de cuidados
+                FotoPlanta(
+                  imagenUrl: planta.imagenUrl,
+                  plantaId: planta.id,
+                  nombre: planta.nombre,
+                  especie: planta.especie,
+                  radio: 0,
+                  ancho: double.infinity,
+                  alto: 150,
+                ),
+                Positioned(
+                  left: 10,
+                  bottom: 10,
+                  right: 10,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Insignia(
+                      texto: planta.ubicacion,
+                      icono: Icons.place_outlined,
+                      fondo: const Color(0xE6FFFFFF),
+                      colorTexto: verdeOscuro,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          planta.nombre,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: verdeOscuro,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          planta.especie,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: colorTextoSuave,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: verdeMedio),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -9,8 +9,13 @@ import java.util.List;
 @ApplicationScoped
 public class PlantaRepositorio implements PanacheRepository<Planta> {
 
-    /** Plantas de un usuario, de la más reciente a la más antigua. */
+    /**
+     * HU04: plantas de un usuario, de la más reciente a la más antigua.
+     * Si dos plantas tienen la misma fecha, se desempata por id (la última creada primero).
+     */
     public List<Planta> listarPorUsuario(Long usuarioId) {
-        return list("usuario.id", Sort.descending("fechaRegistro"), usuarioId);
+        return list("usuario.id",
+                Sort.descending("fechaRegistro").and("id", Sort.Direction.Descending),
+                usuarioId);
     }
 }

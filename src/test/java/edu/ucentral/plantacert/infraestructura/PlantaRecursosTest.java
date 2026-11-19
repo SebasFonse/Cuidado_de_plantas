@@ -115,4 +115,87 @@ public class PlantaRecursosTest {
                 .body("$", hasSize(2))
                 .body("nombre", hasItems("Helecho", "Suculenta"));
     }
+
+    // HU04: ver listado de plantas del catálogo
+
+    private void registrarPlanta(Long usuarioId, String nombre) {
+        given().contentType(ContentType.JSON)
+                .body(json(nombre, "Especie", "Balcón", "", ""))
+                .when().post("/plantas/usuario/" + usuarioId)
+                .then().statusCode(201);
+    }
+
+    @Test
+    public void testListarPlantasDeLaMasRecienteALaMasAntigua() {
+        Long usuarioId = crearUsuarioDePrueba();
+        registrarPlanta(usuarioId, "Primera");
+        registrarPlanta(usuarioId, "Segunda");
+        registrarPlanta(usuarioId, "Tercera");
+
+        given()
+        .when()
+                .get("/plantas/usuario/" + usuarioId)
+        .then()
+                .statusCode(200)
+                .body("nombre", contains("Tercera", "Segunda", "Primera"));
+    }
+
+    @Test
+    public void testListarPlantasIncluyeDatosDeLaTarjeta() {
+        Long usuarioId = crearUsuarioDePrueba();
+        given().contentType(ContentType.JSON)
+                .body(json("Monstera", "Monstera deliciosa", "Sala", "",
+                        "https://ejemplo.com/monstera.jpg"))
+                .when().post("/plantas/usuario/" + usuarioId)
+                .then().statusCode(201);
+
+        given()
+        .when()
+                .get("/plantas/usuario/" + usuarioId)
+        .then()
+                .statusCode(200)
+                .body("[0].nombre", is("Monstera"))
+                .body("[0].especie", is("Monstera deliciosa"))
+                .body("[0].ubicacion", is("Sala"))
+                .body("[0].imagenUrl", is("https://ejemplo.com/monstera.jpg"));
+    }
+
+    @Test
+    public void testListarPlantasSoloDelUsuario() {
+        Long usuarioA = crearUsuarioDePrueba();
+        Long usuarioB = crearUsuarioDePrueba();
+        registrarPlanta(usuarioA, "Planta de A");
+        registrarPlanta(usuarioB, "Planta de B");
+
+        given()
+        .when()
+                .get("/plantas/usuario/" + usuarioA)
+        .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("nombre", contains("Planta de A"))
+                .body("usuarioId", everyItem(equalTo(usuarioA.intValue())));
+    }
+
+    @Test
+    public void testListarPlantasCatalogoVacio() {
+        Long usuarioId = crearUsuarioDePrueba();
+
+        given()
+        .when()
+                .get("/plantas/usuario/" + usuarioId)
+        .then()
+                .statusCode(200)
+                .body("$", empty());
+    }
+
+    @Test
+    public void testListarPlantasUsuarioInexistente() {
+        given()
+        .when()
+                .get("/plantas/usuario/999999")
+        .then()
+                .statusCode(404)
+                .body("error.codigo", is("CERT-ERR-P1"));
+    }
 }

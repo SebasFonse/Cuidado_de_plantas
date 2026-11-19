@@ -1,0 +1,9 @@
+.git
+.github
+.idea
+.mvn
+frontend
+target
+logs
+.env
+*.md

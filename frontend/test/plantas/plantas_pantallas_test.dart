@@ -95,7 +95,8 @@ void main() {
 
     expect(find.text('Mis plantas'), findsOneWidget);
     expect(find.text('Monstera'), findsOneWidget);
-    expect(find.text('Monstera deliciosa · Sala'), findsOneWidget);
+    expect(find.text('Monstera deliciosa'), findsOneWidget);
+    expect(find.text('Sala'), findsOneWidget);
     expect(find.textContaining('agregada a tu catálogo'), findsOneWidget);
   });
 

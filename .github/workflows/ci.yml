@@ -26,3 +26,42 @@ jobs:
         run: |
           chmod +x mvnw
           ./mvnw -B verify
+
+  # Verifica que la imagen de Vercel se construye y que la API arranca con PostgreSQL
+  imagen-docker:
+    runs-on: ubuntu-latest
+    needs: build-y-pruebas
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: plantacert
+          POSTGRES_PASSWORD: plantacert
+          POSTGRES_DB: plantacert
+        ports: [ "5432:5432" ]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Construir imagen
+        run: docker build -t plantacert-api .
+
+      - name: Arrancar la API y consultar /api/info/version
+        run: |
+          docker run -d --name api --network host \
+            -e PORT=8080 \
+            -e DB_URL=jdbc:postgresql://localhost:5432/plantacert \
+            -e DB_USERNAME=plantacert \
+            -e DB_PASSWORD=plantacert \
+            plantacert-api
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/api/info/version; then exit 0; fi
+            sleep 2
+          done
+          docker logs api
+          exit 1

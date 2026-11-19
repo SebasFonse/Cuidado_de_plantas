@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/componentes.dart';
 import '../app/tema.dart';
 import '../core/sesion.dart';
 import '../inicio/inicio_pantalla.dart';
@@ -72,21 +73,41 @@ class _LoginPantallaState extends State<LoginPantalla> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [verdeSuave, colorFondo],
+          ),
+        ),
+        child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
+            child: TarjetaSuave(
+            padding: const EdgeInsets.all(28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.eco, size: 72, color: verdePlantacert),
+                Center(
+                  child: Container(
+                    width: 84,
+                    height: 84,
+                    decoration: const BoxDecoration(
+                      gradient: degradadoOscuro,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.eco, size: 44, color: Colors.white),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Plantacert AI',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: verdePlantacert,
+                        color: verdeOscuro,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -153,6 +174,8 @@ class _LoginPantallaState extends State<LoginPantalla> {
               ],
             ),
           ),
+          ),
+        ),
         ),
       ),
     );
