@@ -7,6 +7,7 @@ import '../core/sesion.dart';
 import '../cuidados/agregar_cuidado_pantalla.dart';
 import '../cuidados/cuidado.dart';
 import '../cuidados/cuidado_servicio.dart';
+import 'foto_planta.dart';
 import 'planta.dart';
 
 /// Información de una planta con sus cuidados periódicos (HU08).
@@ -68,6 +69,8 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
         builder: (_) => AgregarCuidadoPantalla(
           plantaId: widget.planta.id,
           nombrePlanta: widget.planta.nombre,
+          imagenUrl: widget.planta.imagenUrl,
+          especiePlanta: widget.planta.especie,
           servicio: _servicio,
         ),
       ),
@@ -86,7 +89,7 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
   Widget build(BuildContext context) {
     final planta = widget.planta;
     return Scaffold(
-      appBar: AppBar(title: Text(planta.nombre)),
+      appBar: AppBar(title: const Text('Mi planta')),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('boton_agregar_cuidado'),
         onPressed: _agregarCuidado,
@@ -182,6 +185,7 @@ class _DetallePlantaPantallaState extends State<DetallePlantaPantalla> {
   }
 }
 
+/// Portada de la planta: su foto (la misma del catálogo) con el nombre encima.
 class _Encabezado extends StatelessWidget {
   const _Encabezado({required this.planta});
 
@@ -189,47 +193,97 @@ class _Encabezado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagen = planta.imagenUrl?.trim();
-    final portadaPorDefecto = Container(
-      decoration: const BoxDecoration(gradient: degradadoHoja),
-      alignment: Alignment.center,
-      child: const Icon(Icons.local_florist, size: 72, color: verdePlantacert),
-    );
+    final descripcion = planta.descripcion?.trim();
     return TarjetaSuave(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 220,
-              child: (imagen == null || imagen.isEmpty)
-                  ? portadaPorDefecto
-                  : Image.network(
-                      imagen,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => portadaPorDefecto,
+          Stack(
+            children: [
+              FotoPlanta(
+                imagenUrl: planta.imagenUrl,
+                plantaId: planta.id,
+                nombre: planta.nombre,
+                especie: planta.especie,
+                radio: 0,
+                ancho: double.infinity,
+                alto: 240,
+                tamanoIcono: 72,
+              ),
+              // Degradado para que el nombre se lea sobre cualquier foto
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: [0.45, 1],
+                        colors: [Color(0x00000000), Color(0xB3000000)],
+                      ),
                     ),
-            ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 18,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      planta.nombre,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      planta.especie,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xE6FFFFFF),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  planta.especie,
-                  style: const TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: colorTextoSuave,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Insignia(texto: planta.ubicacion, icono: Icons.place_outlined),
+                    if (planta.fechaRegistro != null)
+                      Insignia(
+                        texto: 'Desde ${fechaLegible(planta.fechaRegistro!)}',
+                        icono: Icons.event_available_outlined,
+                        fondo: Insignia.fondoGris,
+                        colorTexto: Insignia.textoGris,
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Insignia(texto: planta.ubicacion, icono: Icons.place_outlined),
-                if (planta.descripcion != null && planta.descripcion!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(planta.descripcion!, style: const TextStyle(color: colorTexto)),
+                if (descripcion != null && descripcion.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    descripcion,
+                    style: const TextStyle(color: colorTexto, height: 1.4),
+                  ),
                 ],
               ],
             ),

@@ -5,6 +5,7 @@ import '../app/tema.dart';
 import '../core/api_excepcion.dart';
 import '../core/sesion.dart';
 import '../core/validadores.dart';
+import '../plantas/foto_planta.dart';
 import 'cuidado.dart';
 import 'cuidado_servicio.dart';
 
@@ -18,11 +19,20 @@ class AgregarCuidadoPantalla extends StatefulWidget {
     super.key,
     required this.plantaId,
     required this.nombrePlanta,
+    this.imagenUrl,
+    this.especiePlanta,
     this.servicio,
   });
 
   final int plantaId;
   final String nombrePlanta;
+
+  /// Foto de la planta: se muestra en el encabezado para saber a cuál
+  /// planta se le programa el cuidado.
+  final String? imagenUrl;
+
+  /// Especie: elige el ícono de la planta cuando no tiene foto.
+  final String? especiePlanta;
   final CuidadoServicio? servicio;
 
   @override
@@ -311,14 +321,45 @@ class _AgregarCuidadoPantallaState extends State<AgregarCuidadoPantalla> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0x26FFFFFF),
-              borderRadius: BorderRadius.circular(14),
+          // La foto de la planta llega animada desde su página
+          SizedBox(
+            width: 64,
+            height: 64,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0x66FFFFFF), width: 2),
+                  ),
+                  child: FotoPlanta(
+                    imagenUrl: widget.imagenUrl,
+                    plantaId: widget.plantaId,
+                    nombre: widget.nombrePlanta,
+                    especie: widget.especiePlanta,
+                    radio: 14,
+                    ancho: 60,
+                    alto: 60,
+                    tamanoIcono: 28,
+                  ),
+                ),
+                Positioned(
+                  right: -6,
+                  bottom: -6,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: verdeSuave, width: 2),
+                    ),
+                    child: Icon(iconoCuidado(_tipo), size: 15, color: verdePlantacert),
+                  ),
+                ),
+              ],
             ),
-            child: Icon(iconoCuidado(_tipo), color: Colors.white),
           ),
           const SizedBox(width: 14),
           Expanded(
